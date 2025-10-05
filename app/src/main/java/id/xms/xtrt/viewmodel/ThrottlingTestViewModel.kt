@@ -27,7 +27,8 @@ data class TestState(
     val currentCpuFreqs: List<Long> = emptyList(),
     val cpuUsage: Float = 0f,
     val deviceInfo: String = "",
-    val stability: Double = 100.0
+    val stability: Double = 100.0,
+    val degradation: Double = 0.0
 )
 
 class ThrottlingTestViewModel : ViewModel() {
@@ -40,7 +41,7 @@ class ThrottlingTestViewModel : ViewModel() {
     private var monitorJob: Job? = null
 
     private val gipsSamples = mutableListOf<Double>()
-    private val maxSamples = 3600
+    private val maxSamples = 3600 // 1 hour of samples
 
     init {
         loadCpuInfo()
@@ -89,18 +90,18 @@ class ThrottlingTestViewModel : ViewModel() {
                 avgGips = 0.0,
                 elapsedTime = 0,
                 gipsHistory = emptyList(),
-                stability = 100.0
+                stability = 100.0,
+                degradation = 0.0
             )
         }
 
-        // Start benchmark - Use new runBenchmark() method
+        // Start benchmark
         benchmarkJob = viewModelScope.launch {
             try {
                 benchmarkEngine.runBenchmark { result ->
                     updateTestResults(result)
                 }
             } catch (e: Exception) {
-                // Handle error gracefully
                 _testState.update { state ->
                     state.copy(
                         isRunning = false,
@@ -136,6 +137,7 @@ class ThrottlingTestViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
+                // Continue silently
             }
         }
     }
@@ -165,8 +167,22 @@ class ThrottlingTestViewModel : ViewModel() {
 
         val newAvg = if (gipsSamples.isNotEmpty()) gipsSamples.average() else 0.0
 
-        // Calculate stability
-        val stability = if (newMax > 0) (newMin / newMax) * 100 else 100.0
+        // Current-based stability (real-time responsive)
+        val currentGips = result.gips
+        val stability = if (newMax > 0) {
+            (currentGips / newMax) * 100.0
+        } else {
+            100.0
+        }
+
+        // Peak degradation (historical worst case)
+        val degradation = if (newMax > 0 && newMin != Double.MAX_VALUE) {
+            ((newMax - newMin) / newMax) * 100.0
+        } else {
+            0.0
+        }
+
+        // Keep graph history
         val maxGraphPoints = 7200
         val newHistory = (currentState.gipsHistory + (result.elapsedSeconds to result.gips))
             .takeLast(maxGraphPoints)
@@ -179,7 +195,8 @@ class ThrottlingTestViewModel : ViewModel() {
                 avgGips = newAvg,
                 elapsedTime = result.elapsedSeconds,
                 gipsHistory = newHistory,
-                stability = stability
+                stability = stability,
+                degradation = degradation
             )
         }
     }

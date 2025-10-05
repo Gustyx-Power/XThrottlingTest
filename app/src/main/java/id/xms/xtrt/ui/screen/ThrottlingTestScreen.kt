@@ -144,6 +144,7 @@ fun ThrottlingTestScreen(
             if (testState.isRunning || testState.gipsHistory.isNotEmpty()) {
                 GipsChart(
                     data = testState.gipsHistory,
+                    stability = testState.stability,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(450.dp)
