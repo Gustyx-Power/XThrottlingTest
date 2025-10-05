@@ -22,15 +22,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun GipsChart(
     data: List<Pair<Long, Double>>,
+    stability: Double, // ✅ NEW: Receive from TestState
     modifier: Modifier = Modifier
 ) {
     val maxGips = data.maxOfOrNull { it.second } ?: 0.0
     val minGips = if (data.isNotEmpty()) data.minOfOrNull { it.second } ?: 0.0 else 0.0
     val avgGips = if (data.isNotEmpty()) data.map { it.second }.average() else 0.0
-    val currentGips = data.lastOrNull()?.second ?: 0.0
-
-    // Calculate stability based on min/max ratio
-    val stability = if (maxGips > 0) (minGips / maxGips) * 100 else 100.0
 
     Card(
         modifier = modifier,
@@ -64,13 +61,16 @@ fun GipsChart(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Status based on stability
+            // ✅ Status based on PASSED stability (from TestState)
             val (statusText, statusColor) = when {
                 data.isEmpty() -> "Waiting" to Color(0xFF2196F3)
-                stability >= 90.0 -> "Excellent" to Color(0xFF4CAF50)
-                stability >= 80.0 -> "Good" to Color(0xFF8BC34A)
+                stability >= 95.0 -> "Excellent" to Color(0xFF4CAF50)
+                stability >= 90.0 -> "Very Good" to Color(0xFF66BB6A)
+                stability >= 85.0 -> "Good" to Color(0xFF8BC34A)
+                stability >= 80.0 -> "Fair" to Color(0xFFCDDC39)
+                stability >= 75.0 -> "Warning" to Color(0xFFFFEB3B)
                 stability >= 70.0 -> "Throttling" to Color(0xFFFF9800)
-                stability >= 60.0 -> "Heavy Throttle" to Color(0xFFFF5722)
+                stability >= 65.0 -> "Heavy Throttle" to Color(0xFFFF5722)
                 else -> "Critical" to Color(0xFFF44336)
             }
 
@@ -294,8 +294,7 @@ private fun DrawScope.drawChartContent(
         val normY = ((gips - displayMin) / dataRange).toFloat().coerceIn(0f, 1f)
         val y = topPadding + chartHeight - (normY * chartHeight)
 
-        val rollingMax = calculateRollingMax(data, 0)
-        val color = getColorForPerformance(gips, rollingMax)
+        val color = getColorForPerformance(gips, maxGips)
 
         for (r in listOf(35f, 25f, 15f)) {
             drawCircle(
@@ -316,19 +315,17 @@ private fun DrawScope.drawChartContent(
         Offset(x, y)
     }
 
-    // Draw multi-color fill area
-    drawMultiColorFill(points, data, height, bottomPadding, topPadding)
+    // Draw multi-color fill
+    drawMultiColorFill(points, data, maxGips, height, bottomPadding, topPadding)
 
-    // Draw lines with rolling max colors
+    // Draw lines
     for (i in 0 until points.size - 1) {
         val start = points[i]
         val end = points[i + 1]
 
-        val rollingMax = calculateRollingMax(data, i + 1)
         val currentPerformance = data[i + 1].second
-        val segmentColor = getColorForPerformance(currentPerformance, rollingMax)
+        val segmentColor = getColorForPerformance(currentPerformance, maxGips)
 
-        // Shadow
         drawLine(
             color = Color.Black.copy(alpha = 0.1f),
             start = Offset(start.x + 1, start.y + 1),
@@ -336,6 +333,7 @@ private fun DrawScope.drawChartContent(
             strokeWidth = 3f,
             cap = StrokeCap.Round
         )
+
         drawLine(
             color = segmentColor,
             start = start,
@@ -345,6 +343,7 @@ private fun DrawScope.drawChartContent(
         )
     }
 
+    // Smart point rendering
     val shouldDrawPoints = data.size <= 50
     val pointInterval = when {
         data.size <= 50 -> 1
@@ -355,8 +354,7 @@ private fun DrawScope.drawChartContent(
 
     if (shouldDrawPoints) {
         points.forEachIndexed { i, pt ->
-            val rollingMax = calculateRollingMax(data, i)
-            val color = getColorForPerformance(data[i].second, rollingMax)
+            val color = getColorForPerformance(data[i].second, maxGips)
 
             drawCircle(color = color.copy(alpha = 0.2f), radius = 8f, center = pt)
             drawCircle(color = Color.White, radius = 5f, center = pt)
@@ -365,8 +363,7 @@ private fun DrawScope.drawChartContent(
     } else {
         points.forEachIndexed { i, pt ->
             if (i % pointInterval == 0 || i == points.size - 1) {
-                val rollingMax = calculateRollingMax(data, i)
-                val color = getColorForPerformance(data[i].second, rollingMax)
+                val color = getColorForPerformance(data[i].second, maxGips)
 
                 drawCircle(color = color.copy(alpha = 0.15f), radius = 6f, center = pt)
                 drawCircle(color = Color.White, radius = 4f, center = pt)
@@ -376,33 +373,26 @@ private fun DrawScope.drawChartContent(
     }
 }
 
-private fun calculateRollingMax(data: List<Pair<Long, Double>>, currentIndex: Int): Double {
-    val windowSize = 30
-    val startIndex = maxOf(0, currentIndex - windowSize + 1)
-    val window = data.subList(startIndex, currentIndex + 1)
-    return window.maxOfOrNull { it.second } ?: data[currentIndex].second
-}
-
-private fun getColorForPerformance(currentGips: Double, recentMaxGips: Double): Color {
-    val performanceRatio = if (recentMaxGips > 0) currentGips / recentMaxGips else 1.0
+private fun getColorForPerformance(currentGips: Double, absoluteMaxGips: Double): Color {
+    val performanceRatio = if (absoluteMaxGips > 0) currentGips / absoluteMaxGips else 1.0
 
     return when {
-        performanceRatio >= 0.95 -> Color(0xFF4CAF50) // Excellent - Dark Green
-        performanceRatio >= 0.90 -> Color(0xFF66BB6A) // Very Good - Medium Green
-        performanceRatio >= 0.85 -> Color(0xFF8BC34A) // Good - Light Green
-        performanceRatio >= 0.80 -> Color(0xFFCDDC39) // OK - Lime Yellow
-        performanceRatio >= 0.75 -> Color(0xFFFFEB3B) // Warning - Yellow
-        performanceRatio >= 0.70 -> Color(0xFFFFC107) // Caution - Amber
-        performanceRatio >= 0.65 -> Color(0xFFFF9800) // Throttling - Orange
-        performanceRatio >= 0.60 -> Color(0xFFFF5722) // Heavy - Deep Orange
-        else -> Color(0xFFF44336) // Critical - Red
+        performanceRatio >= 0.95 -> Color(0xFF4CAF50)
+        performanceRatio >= 0.90 -> Color(0xFF66BB6A)
+        performanceRatio >= 0.85 -> Color(0xFF8BC34A)
+        performanceRatio >= 0.80 -> Color(0xFFCDDC39)
+        performanceRatio >= 0.75 -> Color(0xFFFFEB3B)
+        performanceRatio >= 0.70 -> Color(0xFFFFC107)
+        performanceRatio >= 0.65 -> Color(0xFFFF9800)
+        performanceRatio >= 0.60 -> Color(0xFFFF5722)
+        else -> Color(0xFFF44336)
     }
 }
-
 
 private fun DrawScope.drawMultiColorFill(
     points: List<Offset>,
     data: List<Pair<Long, Double>>,
+    absoluteMaxGips: Double,
     height: Float,
     bottomPadding: Float,
     topPadding: Float
@@ -411,9 +401,8 @@ private fun DrawScope.drawMultiColorFill(
         val start = points[i]
         val end = points[i + 1]
 
-        val rollingMax = calculateRollingMax(data, i + 1)
         val currentPerformance = data[i + 1].second
-        val fillColor = getColorForPerformance(currentPerformance, rollingMax)
+        val fillColor = getColorForPerformance(currentPerformance, absoluteMaxGips)
 
         val segmentPath = Path().apply {
             moveTo(start.x, height - bottomPadding)
