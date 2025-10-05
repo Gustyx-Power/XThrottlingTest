@@ -10,10 +10,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import id.xms.xtrt.ui.screen.ThrottlingTestScreen
 import id.xms.xtrt.ui.theme.XThrottlingTestTheme
+import id.xms.xtrt.util.CpuInfoProvider
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CpuInfoProvider.init(applicationContext)
+
         enableEdgeToEdge()
         setContent {
             XThrottlingTestTheme {
