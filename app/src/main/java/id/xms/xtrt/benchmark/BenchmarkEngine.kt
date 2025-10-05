@@ -81,7 +81,7 @@ class BenchmarkEngine {
                 return@withContext 150.0
             }
 
-            // ✅ 20 operations per iteration (from 16)
+
             val opsPerIteration = 20.0
             val totalOps = totalIterations * opsPerIteration
             val opsPerSecond = totalOps / totalSeconds
@@ -123,6 +123,8 @@ class BenchmarkEngine {
             sum += c           // 9: ADD
             sum += d           // 10: ADD
             sum -= e           // 11: SUB
+            sum += f           // 12: ADD
+            sum = sum and 0xFFFFFFFFFFFF // 13: AND
 
             // Matematical Bitwise Operations
             a = (a shr 2)      // 12: SHR
@@ -131,11 +133,13 @@ class BenchmarkEngine {
             d = d xor i        // 15: XOR
             e = e or 0xFF      // 16: OR
             f = (f shr 3)      // 17: SHR
+            sum = sum or 0xAAAA // 17: OR
 
             // Bit Shifting and Combining
             sum += f           // 18: ADD
             a = a + i          // 19: ADD
             b = b xor sum      // 20: XOR
+
 
             // Prevent overflow
             if (i % 10_000_000L == 0L && i > 0) {
