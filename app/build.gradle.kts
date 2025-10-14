@@ -242,6 +242,7 @@ abstract class SendTelegramMessageTask : DefaultTask() {
         }
         val minSdkCodename = when (minSdkVersion) {
             // Assuming minSdkVersion is an Int or can be converted to one for this when
+            21 -> "5.0 [Lollipop]" // Android 5.0
             29 -> "10 [QuinceTart]" // Android 10
             30 -> "11 [RedVelvet]" // Android 11
             31 -> "12 [Snowcone]" // Android 12
