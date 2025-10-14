@@ -12,62 +12,117 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StabilityIndicator(stability: Double) {
+fun StabilityIndicator(
+    stability: Double,
+    degradation: Double = 0.0,
+    modifier: Modifier = Modifier
+) {
+    // Animated progress untuk smooth transition
     val animatedProgress by animateFloatAsState(
-        targetValue = (stability / 100.0).toFloat(),
+        targetValue = (stability / 100.0).toFloat().coerceIn(0f, 1f),
         label = "stability"
     )
 
-    val stabilityColor = when {
-        stability >= 95 -> Color(0xFF4CAF50) // Green
-        stability >= 85 -> Color(0xFFFFC107) // Yellow
-        stability >= 70 -> Color(0xFFFF9800) // Orange
-        else -> Color(0xFFF44336) // Red
+    // Determine status berdasarkan stability
+    val (statusText, statusColor, description) = when {
+        stability >= 95.0 -> Triple("Excellent", Color(0xFF4CAF50), "Perfect - No throttling")
+        stability >= 90.0 -> Triple("Very Good", Color(0xFF66BB6A), "Minimal throttling")
+        stability >= 85.0 -> Triple("Good", Color(0xFF8BC34A), "Light throttling")
+        stability >= 80.0 -> Triple("Fair", Color(0xFFCDDC39), "Moderate throttling")
+        stability >= 75.0 -> Triple("Warning", Color(0xFFFFEB3B), "Notable throttling")
+        stability >= 70.0 -> Triple("Throttling", Color(0xFFFF9800), "Significant throttling")
+        stability >= 65.0 -> Triple("Heavy", Color(0xFFFF5722), "Heavy throttling")
+        else -> Triple("Critical", Color(0xFFF44336), "Severe throttling")
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Title
             Text(
                 text = "Throttling Stability",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Main stability percentage (BIG NUMBER)
             Text(
                 text = String.format("%.1f%%", stability),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = stabilityColor
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = statusColor
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Status description
+            Text(
+                text = "$statusText - $description",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Progress bar (animated)
             LinearProgressIndicator(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp),
-                color = stabilityColor,
+                    .height(12.dp),
+                color = statusColor,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = when {
-                    stability >= 95 -> "Excellent - No throttling detected"
-                    stability >= 85 -> "Good - Minor throttling"
-                    stability >= 70 -> "Fair - Moderate throttling"
-                    else -> "Poor - Significant throttling"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+
+            // Optional: Show degradation if significant
+            if (degradation > 5.0) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Peak Degradation",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            text = "Worst drop from peak",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    }
+
+                    Text(
+                        text = String.format("%.1f%%", degradation),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                            degradation < 10.0 -> Color(0xFF4CAF50)
+                            degradation < 20.0 -> Color(0xFFFF9800)
+                            else -> Color(0xFFF44336)
+                        }
+                    )
+                }
+            }
         }
     }
 }
