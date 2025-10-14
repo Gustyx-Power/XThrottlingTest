@@ -2,6 +2,8 @@ package id.xms.xtrt.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// ===== Core Material Design Tokens (Light) =====
+
 val md_theme_light_primary = Color(0xFF006C4C)
 val md_theme_light_onPrimary = Color(0xFFFFFFFF)
 val md_theme_light_primaryContainer = Color(0xFF89F8C7)
@@ -25,6 +27,11 @@ val md_theme_light_onSurface = Color(0xFF191C1A)
 val md_theme_light_surfaceVariant = Color(0xFFDBE5DD)
 val md_theme_light_onSurfaceVariant = Color(0xFF404943)
 val md_theme_light_outline = Color(0xFF707973)
+val md_theme_light_inverseOnSurface = Color(0xFFF0F1EC)
+val md_theme_light_inverseSurface = Color(0xFF303130)
+val md_theme_light_inversePrimary = Color(0xFF6CDBAC)
+
+// ===== Core Material Design Tokens (Dark) =====
 
 val md_theme_dark_primary = Color(0xFF6CDBAC)
 val md_theme_dark_onPrimary = Color(0xFF003826)
@@ -49,3 +56,27 @@ val md_theme_dark_onSurface = Color(0xFFE1E3DF)
 val md_theme_dark_surfaceVariant = Color(0xFF404943)
 val md_theme_dark_onSurfaceVariant = Color(0xFFBFC9C2)
 val md_theme_dark_outline = Color(0xFF8A938C)
+val md_theme_dark_inverseOnSurface = Color(0xFF191C1A)
+val md_theme_dark_inverseSurface = Color(0xFFE1E3DF)
+val md_theme_dark_inversePrimary = Color(0xFF006C4C)
+
+// ===== Performance/Status Custom Colors (use for states/graphs/badges) =====
+
+val statusExcellent = Color(0xFF00C853)
+val statusGood = Color(0xFF64DD17)
+val statusWarning = Color(0xFFFFC107)
+val statusThrottling = Color(0xFFFF9800)
+val statusCritical = Color(0xFFD50000)
+val statusBackgroundGraph = Color(0xFFF2F4F8)
+
+// Badge, highlight, stat label, etc
+val statBlue = Color(0xFF2196F3)
+val statRed = Color(0xFFF44336)
+val statGreen = Color(0xFF4CAF50)
+
+// ===== Optional: Additional Surface/Background Customization =====
+
+val surfaceElevated = Color(0xFFFFFFFF)
+val surfaceElevatedDark = Color(0xFF232323)
+val dividerColor = Color(0xFFDDDDDD)
+val chartGridColor = Color(0xFFB3B3B3)
