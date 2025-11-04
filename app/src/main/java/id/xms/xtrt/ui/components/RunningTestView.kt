@@ -25,6 +25,8 @@ fun RunningTestView(
     onStopTest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    KeepScreenOn()
+    
     // Pulsing animation for live indicator
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
